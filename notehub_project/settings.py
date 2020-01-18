@@ -20,10 +20,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'ohwqiq+3n=0nwf%p=6fb7oui41*cc&nlf$#7wm$2jwm#ka5fnv'
+# Load secret key for production from enviroment
+SECRET_KEY = os.environ.get('NOTEHUB_SECRET_KEY', 'ohwqiq+3n=0nwf%p=6fb7oui41*cc&nlf$#7wm$2jwm#ka5fnv')
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('NOTEHUB_DEBUG', '') != 'False'
 
 ALLOWED_HOSTS = []
 
