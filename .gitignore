@@ -83,5 +83,11 @@ target/
 __pycache__/
 local_settings.py
 
+### Mypy ###
+.mypy_cache/
+
+### Emacs ###
+\#*\#
+
 .env
 db.sqlite3
