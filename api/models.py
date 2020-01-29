@@ -21,3 +21,8 @@ class Note(models.Model):
         return self.title
 
 
+class NoteFile(models.Model):
+    note_id = models.ForeignKey(Note, on_delete=models.CASCADE)
+    index = models.IntegerField()
+    file = models.FileField(upload_to=user_upload_path)
+    created_at = models.DateTimeField(auto_now_add=True)
