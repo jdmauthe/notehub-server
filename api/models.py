@@ -1,12 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import User
-from uuid import uuid4
 
 
 # Create your models here.
-def user_upload_path(instance):
-    filename = str(uuid4())
-    return "{0}/{1}".format(instance.user.id, filename)
+def user_upload_path(instance, filename):
+    return "{0}/{1}".format(instance.note.id, filename)
 
 
 class Note(models.Model):
