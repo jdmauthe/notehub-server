@@ -62,3 +62,51 @@ class NoteDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Note.objects.all()
     serializer_class = NoteSerializer
 
+
+class NoteFileView(mixins.CreateModelMixin,
+                   mixins.ListModelMixin,
+                   generics.GenericAPIView):
+    http_method_names = ['get', 'post', 'patch', 'delete']
+    permission_classes = (IsNoteAuthorOrReadOnly,)
+    serializer_class = NoteFileSerializer
+
+
+    def perform_create(self, serializer):
+        serializer.save(note=Note.objects.get(pk=self.kwargs['note_id']))
+
+
+    def get_queryset(self):
+            """
+            This view should return a list of all the purchases for
+            the user as determined by the username portion of the URL.
+            """
+            note_id = self.kwargs['note_id']
+            return NoteFile.objects.filter(note__pk=note_id)
+
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        responce = self.create(request, *args, **kwargs)
+        if status.is_success(responce.status_code):
+            note_id = self.kwargs['note_id']
+            note = Note.objects.get(pk=note_id)
+            note.save()
+        return responce
+
+
+class NoteFileDetailView(generics.RetrieveUpdateDestroyAPIView):
+    http_method_names = ['get', 'post', 'patch', 'delete']
+    permission_classes = (IsNoteAuthorOrReadOnly,)
+    serializer_class = NoteFileSerializer
+    lookup_field = 'index'
+
+
+    def get_queryset(self):
+            """
+            This view should return a list of all the purchases for
+            the user as determined by the username portion of the URL.
+            """
+            note_id = self.kwargs['note_id']
+            return NoteFile.objects.filter(note__pk=note_id)
