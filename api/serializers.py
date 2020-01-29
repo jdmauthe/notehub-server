@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from .models import Note, NoteFile
 from rest_framework import serializers
 
 
@@ -18,3 +19,31 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(data["password"])
         user.save()
         return user
+
+
+class NoteSerializer(serializers.ModelSerializer):
+    author = serializers.ReadOnlyField(source="author.id")
+
+    class Meta:
+        model = Note
+        fields = [
+            "id",
+            "author",
+            "title",
+            "university",
+            "course",
+            "created_at",
+            "updated_at",
+        ]
+
+class NoteFileSerializer(serializers.ModelSerializer):
+    note = serializers.ReadOnlyField(source="note.id")
+
+    class Meta:
+        model = NoteFile
+        fields = [
+            "note",
+            "index",
+            "file",
+            "created_at",
+        ]
