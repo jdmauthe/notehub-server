@@ -10,7 +10,7 @@ def user_upload_path(instance):
 
 
 class Note(models.Model):
-    author_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=50)
     university = models.CharField(max_length=50)
     course = models.CharField(max_length=50)
@@ -22,7 +22,10 @@ class Note(models.Model):
 
 
 class NoteFile(models.Model):
-    note_id = models.ForeignKey(Note, on_delete=models.CASCADE)
+    note = models.ForeignKey(Note, on_delete=models.CASCADE)
     index = models.IntegerField()
     file = models.FileField(upload_to=user_upload_path)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ["note", "index"]
