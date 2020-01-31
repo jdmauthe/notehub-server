@@ -1,6 +1,6 @@
 from django.urls import path
 from rest_framework.authtoken import views
-from .views import UserView, NoteView, NoteDetailView, NoteFileView, NoteFileDetailView
+from .views import UserView, NoteView, NoteDetailView, NoteFileView, NoteFileDetailView, UniversityView, UniversityDetailView
 
 urlpatterns = [
     path("login/", views.obtain_auth_token),
@@ -9,4 +9,6 @@ urlpatterns = [
     path("notes/<int:pk>/", NoteDetailView.as_view()),
     path("notes/<int:note_id>/files", NoteFileView.as_view()),
     path("notes/<int:note_id>/files/<int:index>", NoteFileDetailView.as_view()),
+    path("universities/", UniversityView.as_view()),
+    path("universities/<int:pk>/", UniversityDetailView.as_view()),
 ]
