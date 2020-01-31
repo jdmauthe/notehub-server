@@ -27,3 +27,6 @@ class NoteFile(models.Model):
 
     class Meta:
         unique_together = ["note", "index"]
+
+    def __str__(self):
+        return self.title
