@@ -23,19 +23,25 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class NoteSerializer(serializers.ModelSerializer):
-    author = serializers.ReadOnlyField(source="author.id")
+    author = serializers.HiddenField(default="author.id")
+    author_username = serializers.ReadOnlyField(source="author.username")
+    university_name = serializers.ReadOnlyField(source="university.name")
 
     class Meta:
         model = Note
         fields = [
             "id",
             "author",
+            "author_username",
             "title",
             "university",
+            "university_name",
             "course",
             "created_at",
             "updated_at",
         ]
+        extra_kwargs = {"university": {"write_only": True}}
+
 
 class NoteFileSerializer(serializers.ModelSerializer):
     note = serializers.ReadOnlyField(source="note.id")
