@@ -47,3 +47,7 @@ class NoteFileSerializer(serializers.ModelSerializer):
             "file",
             "created_at",
         ]
+        extra_kwargs = {
+            "file": {"validators": [FileExtensionValidator(["pdf", "png", "jpg"])],}
+        }
+
