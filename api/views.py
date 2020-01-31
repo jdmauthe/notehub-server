@@ -1,9 +1,9 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
 from rest_framework import generics, mixins, permissions, status
-from .models import Note, NoteFile
+from .models import Note, NoteFile, University
 from .permissions import IsAuthorOrReadOnly, IsNoteAuthorOrReadOnly
-from .serializers import UserSerializer, NoteSerializer, NoteFileSerializer
+from .serializers import UserSerializer, NoteSerializer, NoteFileSerializer, UniversitySerializer
 
 # Create your views here.
 class UserView(mixins.CreateModelMixin,
@@ -110,3 +110,32 @@ class NoteFileDetailView(generics.RetrieveUpdateDestroyAPIView):
             """
             note_id = self.kwargs['note_id']
             return NoteFile.objects.filter(note__pk=note_id)
+
+
+class UniversityView(mixins.ListModelMixin,
+                     generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    serializer_class = UniversitySerializer
+
+    def get_queryset(self):
+        queryset = University.objects.all()
+        starts_with = self.request.query_params.get('starts_with', None)
+        contains = self.request.query_params.get('contains', None)
+        order_by = self.request.query_params.get('order_by', None)
+        if starts_with is not None:
+            queryset = queryset.filter(name__startswith=starts_with)
+        if contains is not None:
+            queryset = queryset.filter(name__contains=contains)
+        if order_by is not None:
+            queryset = queryset.order_by(order_by)
+        return queryset
+
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+
+class UniversityDetailView(generics.RetrieveAPIView):
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    queryset = University.objects.all()
+    serializer_class = UniversitySerializer
