@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
-from .models import Note, NoteFile
+from django.core.validators import FileExtensionValidator
+from .models import Note, NoteFile, University
 from rest_framework import serializers
 
 
@@ -51,3 +52,11 @@ class NoteFileSerializer(serializers.ModelSerializer):
             "file": {"validators": [FileExtensionValidator(["pdf", "png", "jpg"])],}
         }
 
+
+class UniversitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = University
+        fields = [
+            "id",
+            "name",
+        ]
