@@ -6,11 +6,16 @@ from django.contrib.auth.models import User
 def user_upload_path(instance, filename):
     return "{0}/{1}".format(instance.note.id, filename)
 
+class University(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
 
 class Note(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=50)
-    university = models.CharField(max_length=50)
+    university = models.ForeignKey(University, models.SET_NULL, blank=True, null=True)
     course = models.CharField(max_length=50)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
