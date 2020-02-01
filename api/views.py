@@ -139,3 +139,4 @@ class UniversityDetailView(generics.RetrieveAPIView):
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     queryset = University.objects.all()
     serializer_class = UniversitySerializer
+    lookup_field = 'name'

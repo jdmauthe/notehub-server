@@ -10,5 +10,5 @@ urlpatterns = [
     path("notes/<int:note_id>/files", NoteFileView.as_view()),
     path("notes/<int:note_id>/files/<int:index>", NoteFileDetailView.as_view()),
     path("universities/", UniversityView.as_view()),
-    path("universities/<int:pk>/", UniversityDetailView.as_view()),
+    path("universities/<str:name>/", UniversityDetailView.as_view()),
 ]
