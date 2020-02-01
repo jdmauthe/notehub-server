@@ -119,9 +119,12 @@ class UniversityView(mixins.ListModelMixin,
 
     def get_queryset(self):
         queryset = University.objects.all()
+        name = self.request.query_params.get('name', None)
         starts_with = self.request.query_params.get('starts_with', None)
         contains = self.request.query_params.get('contains', None)
         order_by = self.request.query_params.get('order_by', None)
+        if name is not None:
+            queryset = queryset.filter(name=name)
         if starts_with is not None:
             queryset = queryset.filter(name__startswith=starts_with)
         if contains is not None:
