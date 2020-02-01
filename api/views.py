@@ -97,7 +97,7 @@ class NoteFileView(mixins.CreateModelMixin,
 
 
 class NoteFileDetailView(generics.RetrieveUpdateDestroyAPIView):
-    http_method_names = ['get', 'post', 'patch', 'delete']
+    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
     permission_classes = (IsNoteAuthorOrReadOnly,)
     serializer_class = NoteFileSerializer
     lookup_field = 'index'
