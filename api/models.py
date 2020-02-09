@@ -37,3 +37,15 @@ class NoteFile(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Rating(models.Model):
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    note = models.ForeignKey(Note, on_delete=models.CASCADE)
+    score = models.IntegerField()
+
+    class Meta:
+        unique_together = ["author", "note"]
+
+    def __str__(self):
+        return self.author.username + " rating for " + self.note.title
