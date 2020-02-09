@@ -1,5 +1,5 @@
 from rest_framework import permissions
-from .models import Note
+from .models import Note, Rating
 
 
 class IsAuthorOrReadOnly(permissions.BasePermission):
@@ -17,8 +17,21 @@ class IsNoteAuthorOrReadOnly(permissions.BasePermission):
         return obj.note.author == request.user
 
     def has_permission(self, request, view):
-        if request.method == 'POST':
-            note_id = view.kwargs['note_id']
+        if request.method == "POST":
+            note_id = view.kwargs["note_id"]
             obj = Note.objects.get(pk=note_id)
             return obj.author == request.user
+        return True
+
+
+class AlreadyPosted(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method == "POST":
+            note_id = view.kwargs["note_id"]
+            obj = Rating.objects.all()
+            return (
+                not obj.filter(note__pk=note_id)
+                .filter(author__pk=request.user.id)
+                .exists()
+            )
         return True
