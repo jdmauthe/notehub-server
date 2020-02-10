@@ -10,11 +10,15 @@ from .views import (
     UniversityDetailView,
     RatingView,
     RatingDetailView,
+    SelfView,
+    SelfFileView,
 )
 
 urlpatterns = [
     path("login/", views.obtain_auth_token),
-    path("user/", UserView.as_view()),
+    path("user/", SelfView.as_view()),
+    path("user/files", SelfFileView.as_view()),
+    path("users/", UserView.as_view()),
     path("notes/", NoteView.as_view()),
     path("notes/<int:pk>/", NoteDetailView.as_view()),
     path("notes/<int:note_id>/files", NoteFileView.as_view()),
