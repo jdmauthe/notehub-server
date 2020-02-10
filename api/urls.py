@@ -12,6 +12,8 @@ from .views import (
     RatingDetailView,
     SelfView,
     SelfFileView,
+    CommentView,
+    CommentDetailView,
 )
 
 urlpatterns = [
@@ -25,6 +27,8 @@ urlpatterns = [
     path("notes/<int:note_id>/files/<int:index>", NoteFileDetailView.as_view()),
     path("notes/<int:note_id>/ratings", RatingView.as_view()),
     path("notes/<int:note_id>/ratings/<int:pk>", RatingDetailView.as_view()),
+    path("notes/<int:note_id>/comments", CommentView.as_view()),
+    path("notes/<int:note_id>/comments/<int:pk>", CommentDetailView.as_view()),
     path("universities/", UniversityView.as_view()),
     path("universities/<str:name>/", UniversityDetailView.as_view()),
 ]
