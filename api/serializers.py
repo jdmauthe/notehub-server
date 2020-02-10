@@ -1,6 +1,11 @@
 from django.contrib.auth.models import User
-from django.core.validators import FileExtensionValidator
-from .models import Note, NoteFile, University
+from django.core.validators import (
+    FileExtensionValidator,
+    MinValueValidator,
+    MaxValueValidator,
+)
+from rest_framework.validators import UniqueTogetherValidator
+from .models import Note, NoteFile, University, Rating
 from rest_framework import serializers
 
 
@@ -66,3 +71,22 @@ class UniversitySerializer(serializers.ModelSerializer):
             "id",
             "name",
         ]
+
+
+class RatingSerializer(serializers.ModelSerializer):
+    note = serializers.HiddenField(default="note.id")
+    author = serializers.HiddenField(default="author.id")
+    username = serializers.ReadOnlyField(source="author.username")
+
+    class Meta:
+        model = Rating
+        fields = [
+            "id",
+            "note",
+            "author",
+            "username",
+            "score",
+        ]
+        extra_kwargs = {
+            "score": {"validators": [MinValueValidator(0), MaxValueValidator(5),]}
+        }

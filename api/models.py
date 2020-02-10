@@ -6,11 +6,13 @@ from django.contrib.auth.models import User
 def user_upload_path(instance, filename):
     return "{0}/{1}".format(instance.note.id, filename)
 
+
 class University(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=200)
 
     def __str__(self):
         return self.name
+
 
 class Note(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -35,3 +37,15 @@ class NoteFile(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Rating(models.Model):
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    note = models.ForeignKey(Note, on_delete=models.CASCADE)
+    score = models.IntegerField()
+
+    class Meta:
+        unique_together = ["author", "note"]
+
+    def __str__(self):
+        return self.author.username + " rating for " + self.note.title

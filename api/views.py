@@ -1,14 +1,18 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
 from rest_framework import generics, mixins, permissions, status
-from .models import Note, NoteFile, University
-from .permissions import IsAuthorOrReadOnly, IsNoteAuthorOrReadOnly
-from .serializers import UserSerializer, NoteSerializer, NoteFileSerializer, UniversitySerializer
+from .models import Note, NoteFile, University, Rating
+from .permissions import IsAuthorOrReadOnly, IsNoteAuthorOrReadOnly, AlreadyPosted
+from .serializers import (
+    UserSerializer,
+    NoteSerializer,
+    NoteFileSerializer,
+    UniversitySerializer,
+    RatingSerializer,
+)
 
 # Create your views here.
-class UserView(mixins.CreateModelMixin,
-               mixins.ListModelMixin,
-               generics.GenericAPIView):
+class UserView(mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView):
     permission_classes = (permissions.AllowAny,)
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -20,21 +24,18 @@ class UserView(mixins.CreateModelMixin,
         return self.create(request, *args, **kwargs)
 
 
-class NoteView(mixins.CreateModelMixin,
-               mixins.ListModelMixin,
-               generics.GenericAPIView):
+class NoteView(mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     queryset = Note.objects.all()
     serializer_class = NoteSerializer
 
-
     def get_queryset(self):
         queryset = Note.objects.all()
-        username = self.request.query_params.get('username', None)
-        title = self.request.query_params.get('title', None)
-        university = self.request.query_params.get('university', None)
-        course = self.request.query_params.get('course', None)
-        order_by = self.request.query_params.get('order_by', None)
+        username = self.request.query_params.get("username", None)
+        title = self.request.query_params.get("title", None)
+        university = self.request.query_params.get("university", None)
+        course = self.request.query_params.get("course", None)
+        order_by = self.request.query_params.get("order_by", None)
         if username is not None:
             queryset = queryset.filter(author__username=username)
         if title is not None:
@@ -63,26 +64,23 @@ class NoteDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = NoteSerializer
 
 
-class NoteFileView(mixins.CreateModelMixin,
-                   mixins.ListModelMixin,
-                   generics.GenericAPIView):
-    http_method_names = ['get', 'post', 'patch', 'delete']
+class NoteFileView(
+    mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
+):
+    http_method_names = ["get", "post", "patch", "delete"]
     permission_classes = (IsNoteAuthorOrReadOnly,)
     serializer_class = NoteFileSerializer
 
-
     def perform_create(self, serializer):
-        serializer.save(note=Note.objects.get(pk=self.kwargs['note_id']))
-
+        serializer.save(note=Note.objects.get(pk=self.kwargs["note_id"]))
 
     def get_queryset(self):
-            """
+        """
             This view should return a list of all the purchases for
             the user as determined by the username portion of the URL.
             """
-            note_id = self.kwargs['note_id']
-            return NoteFile.objects.filter(note__pk=note_id)
-
+        note_id = self.kwargs["note_id"]
+        return NoteFile.objects.filter(note__pk=note_id)
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
@@ -90,38 +88,36 @@ class NoteFileView(mixins.CreateModelMixin,
     def post(self, request, *args, **kwargs):
         responce = self.create(request, *args, **kwargs)
         if status.is_success(responce.status_code):
-            note_id = self.kwargs['note_id']
+            note_id = self.kwargs["note_id"]
             note = Note.objects.get(pk=note_id)
             note.save()
         return responce
 
 
 class NoteFileDetailView(generics.RetrieveUpdateDestroyAPIView):
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+    http_method_names = ["get", "post", "patch", "delete", "options"]
     permission_classes = (IsNoteAuthorOrReadOnly,)
     serializer_class = NoteFileSerializer
-    lookup_field = 'index'
-
+    lookup_field = "index"
 
     def get_queryset(self):
-            """
+        """
             This view should return a list of all the purchases for
             the user as determined by the username portion of the URL.
             """
-            note_id = self.kwargs['note_id']
-            return NoteFile.objects.filter(note__pk=note_id)
+        note_id = self.kwargs["note_id"]
+        return NoteFile.objects.filter(note__pk=note_id)
 
 
-class UniversityView(mixins.ListModelMixin,
-                     generics.GenericAPIView):
+class UniversityView(mixins.ListModelMixin, generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     serializer_class = UniversitySerializer
 
     def get_queryset(self):
         queryset = University.objects.all()
-        starts_with = self.request.query_params.get('starts_with', None)
-        contains = self.request.query_params.get('contains', None)
-        order_by = self.request.query_params.get('order_by', None)
+        starts_with = self.request.query_params.get("starts_with", None)
+        contains = self.request.query_params.get("contains", None)
+        order_by = self.request.query_params.get("order_by", None)
         if starts_with is not None:
             queryset = queryset.filter(name__startswith=starts_with)
         if contains is not None:
@@ -129,7 +125,6 @@ class UniversityView(mixins.ListModelMixin,
         if order_by is not None:
             queryset = queryset.order_by(order_by)
         return queryset
-
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
@@ -139,4 +134,47 @@ class UniversityDetailView(generics.RetrieveAPIView):
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     queryset = University.objects.all()
     serializer_class = UniversitySerializer
-    lookup_field = 'name'
+    lookup_field = "name"
+
+
+class RatingView(
+    mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
+):
+    permission_classes = (
+        permissions.IsAuthenticatedOrReadOnly,
+        AlreadyPosted,
+    )
+    serializer_class = RatingSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(
+            author=self.request.user, note=Note.objects.get(pk=self.kwargs["note_id"])
+        )
+
+    def get_queryset(self):
+        """
+            This view should return a list of all the purchases for
+            the user as determined by the username portion of the URL.
+            """
+        note_id = self.kwargs["note_id"]
+        return Rating.objects.filter(note__pk=note_id)
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
+class RatingDetailView(generics.RetrieveUpdateDestroyAPIView):
+    http_method_names = ["get", "post", "patch", "delete", "options"]
+    permission_classes = (IsAuthorOrReadOnly,)
+    serializer_class = RatingSerializer
+
+    def get_queryset(self):
+        """
+            This view should return a list of all the purchases for
+            the user as determined by the username portion of the URL.
+            """
+        note_id = self.kwargs["note_id"]
+        return Rating.objects.filter(note__pk=note_id)
