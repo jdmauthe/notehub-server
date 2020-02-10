@@ -5,7 +5,7 @@ from django.core.validators import (
     MaxValueValidator,
 )
 from rest_framework.validators import UniqueTogetherValidator
-from .models import Note, NoteFile, University, Rating
+from .models import Note, NoteFile, University, Rating, Comment
 from rest_framework import serializers
 
 
@@ -90,3 +90,19 @@ class RatingSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "score": {"validators": [MinValueValidator(0), MaxValueValidator(5),]}
         }
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    note = serializers.HiddenField(default="note.id")
+    author = serializers.HiddenField(default="author.id")
+    username = serializers.ReadOnlyField(source="author.username")
+
+    class Meta:
+        model = Comment
+        fields = [
+            "id",
+            "note",
+            "author",
+            "username",
+            "text",
+        ]

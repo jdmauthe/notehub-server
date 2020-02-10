@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth.models import User
 from rest_framework import generics, mixins, permissions, status
 from rest_framework.response import Response
-from .models import Note, NoteFile, University, Rating
+from .models import Note, NoteFile, University, Rating, Comment
 from .permissions import IsAuthorOrReadOnly, IsNoteAuthorOrReadOnly, AlreadyPosted
 from .serializers import (
     UserSerializer,
@@ -10,6 +10,7 @@ from .serializers import (
     NoteFileSerializer,
     UniversitySerializer,
     RatingSerializer,
+    CommentSerializer,
 )
 
 # Create your views here.
@@ -201,3 +202,35 @@ class RatingDetailView(generics.RetrieveUpdateDestroyAPIView):
             """
         note_id = self.kwargs["note_id"]
         return Rating.objects.filter(note__pk=note_id)
+
+
+class CommentView(
+    mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
+):
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    serializer_class = CommentSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(
+            author=self.request.user, note=Note.objects.get(pk=self.kwargs["note_id"])
+        )
+
+    def get_queryset(self):
+        note_id = self.kwargs["note_id"]
+        return Comment.objects.filter(note__pk=note_id)
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
+class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
+    http_method_names = ["get", "post", "patch", "delete", "options"]
+    permission_classes = (IsAuthorOrReadOnly,)
+    serializer_class = CommentSerializer
+
+    def get_queryset(self):
+        note_id = self.kwargs["note_id"]
+        return Comment.objects.filter(note__pk=note_id)
