@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
 from rest_framework import generics, mixins, permissions, status
+from rest_framework.response import Response
 from .models import Note, NoteFile, University, Rating
 from .permissions import IsAuthorOrReadOnly, IsNoteAuthorOrReadOnly, AlreadyPosted
 from .serializers import (
@@ -22,6 +23,28 @@ class UserView(mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericA
 
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
+
+
+class SelfView(generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+    def get(self, request, *args, **kwargs):
+        user = User.objects.get(id=request.user.id)
+        serializer = UserSerializer(user, many=False)
+        return Response(serializer.data)
+
+
+class SelfFileView(generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    queryset = Note.objects.all()
+    serializer_class = NoteSerializer
+
+    def get(self, request, *args, **kwargs):
+        notes = Note.objects.filter(author__id=request.user.id)
+        serializer = NoteSerializer(notes, many=True)
+        return Response(serializer.data)
 
 
 class NoteView(mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView):
