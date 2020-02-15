@@ -143,3 +143,42 @@ class AlreadyPostedRating(permissions.BasePermission):
                 .exists()
             )
         return True
+
+
+class AlreadyPostedFavorite(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method == "POST":
+            note_id = view.kwargs["note_id"]
+            obj = Favorite.objects.all()
+            return (
+                not obj.filter(note__pk=note_id)
+                .filter(user__pk=request.user.id)
+                .exists()
+            )
+        return True
+
+
+class CanAccessFavorite(permissions.BasePermission):
+    def has_permission(self, request, view):
+        note_id = view.kwargs.get("note_id")
+        if note_id is None:
+            note_id = view.kwargs.get("pk")
+        note = None
+        try:
+            note = Note.objects.get(pk=note_id)
+        except ObjectDoesNotExist:
+            return False
+        if note.author == request.user:
+            return True
+        if note.group is None:
+            return True
+        if request.user.is_anonymous:
+            return False
+        is_member = (
+            Membership.objects.all()
+            .filter(user=request.user)
+            .filter(group=note.group)
+            .exists()
+        )
+        is_get = request.method == "GET"
+        return is_member or is_get
