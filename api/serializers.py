@@ -5,7 +5,16 @@ from django.core.validators import (
     MaxValueValidator,
 )
 from rest_framework.validators import UniqueTogetherValidator
-from .models import Note, NoteFile, University, Rating, Comment
+from .models import (
+    Note,
+    NoteFile,
+    University,
+    Rating,
+    Comment,
+    Group,
+    Membership,
+    Invitation,
+)
 from rest_framework import serializers
 
 
@@ -31,6 +40,7 @@ class NoteSerializer(serializers.ModelSerializer):
     author = serializers.HiddenField(default="author.id")
     author_username = serializers.ReadOnlyField(source="author.username")
     university_name = serializers.ReadOnlyField(source="university.name")
+    group = serializers.ReadOnlyField(source="group.id")
 
     class Meta:
         model = Note
@@ -42,6 +52,7 @@ class NoteSerializer(serializers.ModelSerializer):
             "university",
             "university_name",
             "course",
+            "group",
             "created_at",
             "updated_at",
         ]
