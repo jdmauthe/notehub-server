@@ -31,6 +31,15 @@ class Note(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def get_avg_rating(self):
+        ratings = Rating.objects.filter(note=self.id)
+        if len(ratings) == 0:
+            return 0
+        total = 0
+        for rating in ratings:
+            total += rating.score
+        return total / len(ratings)
+
     def __str__(self):
         return self.title
 
@@ -51,7 +60,7 @@ class NoteFile(models.Model):
 class Rating(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     note = models.ForeignKey(Note, on_delete=models.CASCADE)
-    score = models.IntegerField()
+    score = models.FloatField()
 
     class Meta:
         unique_together = ["author", "note"]
