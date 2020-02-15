@@ -11,15 +11,19 @@ from .models import (
     Group,
     Membership,
     Invitation,
+    Favorite,
 )
 from .permissions import (
+    IsAuthor,
     IsAuthorOrReadOnly,
     IsAuthorOrModeratorOrReadOnly,
     IsModeratorOrReadOnly,
     IsNoteAuthorOrReadOnly,
-    AlreadyPosted,
+    AlreadyPostedRating,
+    AlreadyPostedFavorite,
     CanAccessNote,
     CanAccessGroup,
+    CanAccessFavorite,
     HasInvitation,
     IsModerator,
 )
@@ -33,6 +37,7 @@ from .serializers import (
     MembershipSerializer,
     GroupSerializer,
     InvitationSerializer,
+    FavoriteSerializer,
 )
 
 # Create your views here.
@@ -214,7 +219,7 @@ class RatingView(
 ):
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
-        AlreadyPosted,
+        AlreadyPostedRating,
         CanAccessNote,
     )
     serializer_class = RatingSerializer
