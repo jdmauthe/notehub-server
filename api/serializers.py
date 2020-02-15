@@ -132,3 +132,35 @@ class GroupSerializer(serializers.ModelSerializer):
             "moderator_username",
         ]
 
+
+class MembershipSerializer(serializers.ModelSerializer):
+    group = serializers.ReadOnlyField(source="group.id")
+    group_name = serializers.ReadOnlyField(source="group.name")
+    user = serializers.ReadOnlyField(source="user.id")
+    username = serializers.ReadOnlyField(source="user.username")
+
+    class Meta:
+        model = Membership
+        fields = [
+            "id",
+            "group",
+            "group_name",
+            "user",
+            "username",
+        ]
+
+
+class InvitationSerializer(serializers.ModelSerializer):
+    group = serializers.ReadOnlyField(source="group.id")
+    group_name = serializers.ReadOnlyField(source="group.name")
+    username = serializers.ReadOnlyField(source="user.username")
+
+    class Meta:
+        model = Invitation
+        fields = [
+            "id",
+            "group",
+            "group_name",
+            "user",
+            "username",
+        ]
