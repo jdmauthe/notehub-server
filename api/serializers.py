@@ -3,6 +3,7 @@ from django.core.validators import (
     FileExtensionValidator,
     MinValueValidator,
     MaxValueValidator,
+    DecimalValidator,
 )
 from rest_framework.validators import UniqueTogetherValidator
 from .models import (
@@ -42,6 +43,7 @@ class NoteSerializer(serializers.ModelSerializer):
     author_username = serializers.ReadOnlyField(source="author.username")
     university_name = serializers.ReadOnlyField(source="university.name")
     group = serializers.ReadOnlyField(source="group.id")
+    avg_rating = serializers.ReadOnlyField(source="get_avg_rating")
 
     class Meta:
         model = Note
@@ -53,6 +55,7 @@ class NoteSerializer(serializers.ModelSerializer):
             "university",
             "university_name",
             "course",
+            "avg_rating",
             "group",
             "created_at",
             "updated_at",
