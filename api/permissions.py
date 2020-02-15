@@ -132,7 +132,7 @@ class IsNoteAuthorOrReadOnly(permissions.BasePermission):
         return True
 
 
-class AlreadyPosted(permissions.BasePermission):
+class AlreadyPostedRating(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method == "POST":
             note_id = view.kwargs["note_id"]
