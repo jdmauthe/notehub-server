@@ -300,3 +300,136 @@ class GroupView(mixins.CreateModelMixin, generics.GenericAPIView):
             Membership.objects.create(group=group, user=user)
         return response
 
+
+class GroupDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = (
+        permissions.IsAuthenticated,
+        IsModeratorOrReadOnly,
+        CanAccessGroup,
+    )
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+
+
+class GroupNoteView(
+    mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
+):
+    permission_classes = (permissions.IsAuthenticated, CanAccessGroup)
+    serializer_class = NoteSerializer
+
+    def get_queryset(self):
+        queryset = Note.objects.all().filter(group=self.kwargs["group_id"])
+        username = self.request.query_params.get("username", None)
+        title = self.request.query_params.get("title", None)
+        university = self.request.query_params.get("university", None)
+        course = self.request.query_params.get("course", None)
+        order_by = self.request.query_params.get("order_by", None)
+        if username is not None:
+            queryset = queryset.filter(author__username=username)
+        if title is not None:
+            queryset = queryset.filter(title__contains=title)
+        if university is not None:
+            queryset = queryset.filter(university=university)
+        if course is not None:
+            queryset = queryset.filter(course=course)
+        if order_by is not None:
+            queryset = queryset.order_by(order_by)
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(
+            author=self.request.user,
+            group=Group.objects.get(pk=self.kwargs["group_id"]),
+        )
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
+class GroupMembershipView(
+    mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
+):
+    permission_classes = (
+        permissions.IsAuthenticated,
+        HasInvitation,
+    )
+    serializer_class = MembershipSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(
+            user=self.request.user, group=Group.objects.get(pk=self.kwargs["group_id"])
+        )
+
+    def get_queryset(self):
+        group_id = self.kwargs["group_id"]
+        return Membership.objects.filter(group=group_id)
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        response = self.create(request, *args, **kwargs)
+        if status.is_success(response.status_code):
+            group = Group.objects.get(pk=response.data["group"])
+            Invitation.objects.all().filter(user=request.user).filter(
+                group=group.id
+            ).delete()
+        return response
+
+
+class GroupMembershipDetailView(generics.RetrieveDestroyAPIView):
+    permission_classes = (
+        permissions.IsAuthenticated,
+        IsAuthorOrModeratorOrReadOnly,
+    )
+    serializer_class = MembershipSerializer
+
+    def get_queryset(self):
+        """
+            This view should return a list of all the purchases for
+            the user as determined by the username portion of the URL.
+            """
+        group_id = self.kwargs["group_id"]
+        return Membership.objects.filter(group__pk=group_id)
+
+
+class GroupInvitationView(
+    mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
+):
+    permission_classes = (
+        permissions.IsAuthenticated,
+        IsModerator,
+    )
+    serializer_class = InvitationSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(group=Group.objects.get(pk=self.kwargs["group_id"]))
+
+    def get_queryset(self):
+        group_id = self.kwargs["group_id"]
+        return Invitation.objects.filter(group=group_id)
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
+class GroupInvitationDetailView(generics.RetrieveDestroyAPIView):
+    permission_classes = (
+        permissions.IsAuthenticated,
+        IsModerator,
+    )
+    serializer_class = InvitationSerializer
+
+    def get_queryset(self):
+        """
+            This view should return a list of all the purchases for
+            the user as determined by the username portion of the URL.
+            """
+        group_id = self.kwargs["group_id"]
+        return Invitation.objects.filter(group__pk=group_id)
