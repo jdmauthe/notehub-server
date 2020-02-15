@@ -2,8 +2,27 @@ from django.shortcuts import render
 from django.contrib.auth.models import User
 from rest_framework import generics, mixins, permissions, status
 from rest_framework.response import Response
-from .models import Note, NoteFile, University, Rating, Comment
-from .permissions import IsAuthorOrReadOnly, IsNoteAuthorOrReadOnly, AlreadyPosted
+from .models import (
+    Note,
+    NoteFile,
+    University,
+    Rating,
+    Comment,
+    Group,
+    Membership,
+    Invitation,
+)
+from .permissions import (
+    IsAuthorOrReadOnly,
+    IsAuthorOrModeratorOrReadOnly,
+    IsModeratorOrReadOnly,
+    IsNoteAuthorOrReadOnly,
+    AlreadyPosted,
+    CanAccessNote,
+    CanAccessGroup,
+    HasInvitation,
+    IsModerator,
+)
 from .serializers import (
     UserSerializer,
     NoteSerializer,
@@ -11,6 +30,9 @@ from .serializers import (
     UniversitySerializer,
     RatingSerializer,
     CommentSerializer,
+    MembershipSerializer,
+    GroupSerializer,
+    InvitationSerializer,
 )
 
 # Create your views here.
@@ -28,7 +50,6 @@ class UserView(mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericA
 
 class SelfView(generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)
-    queryset = User.objects.all()
     serializer_class = UserSerializer
 
     def get(self, request, *args, **kwargs):
@@ -83,7 +104,7 @@ class NoteView(mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericA
 
 
 class NoteDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = (IsAuthorOrReadOnly,)
+    permission_classes = (IsAuthorOrModeratorOrReadOnly, CanAccessNote)
     queryset = Note.objects.all()
     serializer_class = NoteSerializer
 
@@ -92,7 +113,7 @@ class NoteFileView(
     mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
 ):
     http_method_names = ["get", "post", "patch", "delete"]
-    permission_classes = (IsNoteAuthorOrReadOnly,)
+    permission_classes = (IsNoteAuthorOrReadOnly, CanAccessNote)
     serializer_class = NoteFileSerializer
 
     def perform_create(self, serializer):
@@ -120,7 +141,7 @@ class NoteFileView(
 
 class NoteFileDetailView(generics.RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "post", "patch", "delete", "options"]
-    permission_classes = (IsNoteAuthorOrReadOnly,)
+    permission_classes = (IsNoteAuthorOrReadOnly, CanAccessNote)
     serializer_class = NoteFileSerializer
     lookup_field = "index"
 
@@ -167,6 +188,7 @@ class RatingView(
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
         AlreadyPosted,
+        CanAccessNote,
     )
     serializer_class = RatingSerializer
 
@@ -192,7 +214,7 @@ class RatingView(
 
 class RatingDetailView(generics.RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "post", "patch", "delete", "options"]
-    permission_classes = (IsAuthorOrReadOnly,)
+    permission_classes = (IsAuthorOrReadOnly, CanAccessNote)
     serializer_class = RatingSerializer
 
     def get_queryset(self):
@@ -207,7 +229,7 @@ class RatingDetailView(generics.RetrieveUpdateDestroyAPIView):
 class CommentView(
     mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
 ):
-    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly, CanAccessNote)
     serializer_class = CommentSerializer
 
     def perform_create(self, serializer):
@@ -228,7 +250,7 @@ class CommentView(
 
 class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "post", "patch", "delete", "options"]
-    permission_classes = (IsAuthorOrReadOnly,)
+    permission_classes = (IsAuthorOrReadOnly, CanAccessNote)
     serializer_class = CommentSerializer
 
     def get_queryset(self):
