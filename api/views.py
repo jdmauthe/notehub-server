@@ -58,24 +58,51 @@ class SelfView(generics.GenericAPIView):
         return Response(serializer.data)
 
 
-class SelfFileView(generics.GenericAPIView):
+class SelfNoteView(mixins.ListModelMixin, generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)
-    queryset = Note.objects.all()
+    serializer_class = NoteSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return Note.objects.filter(author__id=user.id)
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+
+class SelfGroupView(generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    queryset = Group.objects.all()
     serializer_class = NoteSerializer
 
     def get(self, request, *args, **kwargs):
-        notes = Note.objects.filter(author__id=request.user.id)
-        serializer = NoteSerializer(notes, many=True)
+        memberships = Membership.objects.filter(user__id=request.user.id)
+        id_list = []
+        for membership in memberships:
+            id_list.append(membership.group.id)
+        groups = Group.objects.filter(id__in=id_list)
+        serializer = GroupSerializer(groups, many=True)
         return Response(serializer.data)
+
+
+class SelfInvitationView(mixins.ListModelMixin, generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = InvitationSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return Invitation.objects.filter(user__id=user.id)
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
 
 
 class NoteView(mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-    queryset = Note.objects.all()
     serializer_class = NoteSerializer
 
     def get_queryset(self):
-        queryset = Note.objects.all()
+        queryset = Note.objects.all().filter(group__isnull=True)
         username = self.request.query_params.get("username", None)
         title = self.request.query_params.get("title", None)
         university = self.request.query_params.get("university", None)
