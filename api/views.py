@@ -11,15 +11,19 @@ from .models import (
     Group,
     Membership,
     Invitation,
+    Favorite,
 )
 from .permissions import (
+    IsAuthor,
     IsAuthorOrReadOnly,
     IsAuthorOrModeratorOrReadOnly,
     IsModeratorOrReadOnly,
     IsNoteAuthorOrReadOnly,
-    AlreadyPosted,
+    AlreadyPostedRating,
+    AlreadyPostedFavorite,
     CanAccessNote,
     CanAccessGroup,
+    CanAccessFavorite,
     HasInvitation,
     IsModerator,
 )
@@ -33,6 +37,7 @@ from .serializers import (
     MembershipSerializer,
     GroupSerializer,
     InvitationSerializer,
+    FavoriteSerializer,
 )
 
 # Create your views here.
@@ -83,6 +88,22 @@ class SelfGroupView(generics.GenericAPIView):
         groups = Group.objects.filter(id__in=id_list)
         serializer = GroupSerializer(groups, many=True)
         return Response(serializer.data)
+
+
+class SelfFavoritesView(mixins.ListModelMixin, generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = NoteSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        favorites = Favorite.objects.filter(user__id=user.id)
+        id_list = []
+        for favorite in favorites:
+            id_list.append(favorite.note.id)
+        return Note.objects.filter(id__in=id_list)
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
 
 
 class SelfInvitationView(mixins.ListModelMixin, generics.GenericAPIView):
@@ -214,7 +235,7 @@ class RatingView(
 ):
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
-        AlreadyPosted,
+        AlreadyPostedRating,
         CanAccessNote,
     )
     serializer_class = RatingSerializer
@@ -433,3 +454,48 @@ class GroupInvitationDetailView(generics.RetrieveDestroyAPIView):
             """
         group_id = self.kwargs["group_id"]
         return Invitation.objects.filter(group__pk=group_id)
+
+
+class FavoriteView(
+    mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
+):
+    permission_classes = (
+        permissions.IsAuthenticated,
+        IsAuthorOrReadOnly,
+        AlreadyPostedFavorite,
+        CanAccessFavorite,
+    )
+    serializer_class = FavoriteSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(
+            user=self.request.user, note=Note.objects.get(pk=self.kwargs["note_id"])
+        )
+
+    # def get(self, request, *args, **kwargs):
+    #     note_id = self.kwargs["note_id"]
+    #     favorite = Favorite.objects.filter(user=request.user.id).filter(note=note_id)
+    #     serializer = UserSerializer(favorite, many=True)
+    #     return Response(serializer.data)
+
+    def get_queryset(self):
+        note_id = self.kwargs["note_id"]
+        return Favorite.objects.filter(user=self.request.user.id).filter(note=note_id)
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
+class FavoriteDetailView(generics.RetrieveDestroyAPIView):
+    permission_classes = (
+        permissions.IsAuthenticated,
+        IsAuthor,
+    )
+    serializer_class = FavoriteSerializer
+
+    def get_queryset(self):
+        note_id = self.kwargs["note_id"]
+        return Favorite.objects.filter(user=self.request.user.id).filter(note=note_id)

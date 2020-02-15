@@ -85,3 +85,14 @@ class Membership(models.Model):
 
     class Meta:
         unique_together = ["group", "user"]
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    note = models.ForeignKey(Note, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ["user", "note"]
+
+    def __str__(self):
+        return self.user.username + " favorite for " + self.note.title

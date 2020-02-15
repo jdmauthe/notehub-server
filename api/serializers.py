@@ -14,6 +14,7 @@ from .models import (
     Group,
     Membership,
     Invitation,
+    Favorite,
 )
 from rest_framework import serializers
 
@@ -163,4 +164,17 @@ class InvitationSerializer(serializers.ModelSerializer):
             "group_name",
             "user",
             "username",
+        ]
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    note = serializers.ReadOnlyField(source="note.id")
+    user = serializers.ReadOnlyField(source="user.id")
+
+    class Meta:
+        model = Favorite
+        fields = [
+            "id",
+            "note",
+            "user",
         ]

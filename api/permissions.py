@@ -1,14 +1,28 @@
 from rest_framework import permissions
 from django.core.exceptions import ObjectDoesNotExist
-from .models import Note, Rating, Membership, Group, Invitation
+from .models import Note, Rating, Membership, Group, Invitation, Favorite
+
+
+class IsAuthor(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        user = None
+        try:
+            user = obj.user
+        except AttributeError:
+            user = obj.author
+        return user == request.user
 
 
 class IsAuthorOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
-
-        return obj.author == request.user
+        user = None
+        try:
+            user = obj.user
+        except AttributeError:
+            user = obj.author
+        return user == request.user
 
 
 class IsModeratorOrReadOnly(permissions.BasePermission):
@@ -118,7 +132,7 @@ class IsNoteAuthorOrReadOnly(permissions.BasePermission):
         return True
 
 
-class AlreadyPosted(permissions.BasePermission):
+class AlreadyPostedRating(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method == "POST":
             note_id = view.kwargs["note_id"]
@@ -129,3 +143,42 @@ class AlreadyPosted(permissions.BasePermission):
                 .exists()
             )
         return True
+
+
+class AlreadyPostedFavorite(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method == "POST":
+            note_id = view.kwargs["note_id"]
+            obj = Favorite.objects.all()
+            return (
+                not obj.filter(note__pk=note_id)
+                .filter(user__pk=request.user.id)
+                .exists()
+            )
+        return True
+
+
+class CanAccessFavorite(permissions.BasePermission):
+    def has_permission(self, request, view):
+        note_id = view.kwargs.get("note_id")
+        if note_id is None:
+            note_id = view.kwargs.get("pk")
+        note = None
+        try:
+            note = Note.objects.get(pk=note_id)
+        except ObjectDoesNotExist:
+            return False
+        if note.author == request.user:
+            return True
+        if note.group is None:
+            return True
+        if request.user.is_anonymous:
+            return False
+        is_member = (
+            Membership.objects.all()
+            .filter(user=request.user)
+            .filter(group=note.group)
+            .exists()
+        )
+        is_get = request.method == "GET"
+        return is_member or is_get
