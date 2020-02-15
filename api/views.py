@@ -246,10 +246,6 @@ class RatingView(
         )
 
     def get_queryset(self):
-        """
-            This view should return a list of all the purchases for
-            the user as determined by the username portion of the URL.
-            """
         note_id = self.kwargs["note_id"]
         return Rating.objects.filter(note__pk=note_id)
 
@@ -266,10 +262,6 @@ class RatingDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = RatingSerializer
 
     def get_queryset(self):
-        """
-            This view should return a list of all the purchases for
-            the user as determined by the username portion of the URL.
-            """
         note_id = self.kwargs["note_id"]
         return Rating.objects.filter(note__pk=note_id)
 
