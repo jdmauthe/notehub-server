@@ -73,7 +73,7 @@ class NoteView(mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericA
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        serializer.save(author=self.request.user, group=None)
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
@@ -234,3 +234,20 @@ class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         note_id = self.kwargs["note_id"]
         return Comment.objects.filter(note__pk=note_id)
+
+
+class GroupView(mixins.CreateModelMixin, generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = GroupSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(moderator=self.request.user)
+
+    def post(self, request, *args, **kwargs):
+        response = self.create(request, *args, **kwargs)
+        if status.is_success(response.status_code):
+            group = Group.objects.get(pk=response.data["id"])
+            user = request.user
+            Membership.objects.create(group=group, user=user)
+        return response
+
