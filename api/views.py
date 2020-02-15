@@ -234,7 +234,7 @@ class RatingView(
     mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
 ):
     permission_classes = (
-        permissions.IsAuthenticatedOrReadOnly,
+        permissions.IsAuthenticated,
         AlreadyPostedRating,
         CanAccessNote,
     )
@@ -258,7 +258,7 @@ class RatingView(
 
 class RatingDetailView(generics.RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "post", "patch", "delete", "options"]
-    permission_classes = (IsAuthorOrReadOnly, CanAccessNote)
+    permission_classes = (permissions.IsAuthenticated, IsAuthorOrReadOnly, CanAccessNote)
     serializer_class = RatingSerializer
 
     def get_queryset(self):
