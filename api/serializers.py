@@ -5,7 +5,16 @@ from django.core.validators import (
     MaxValueValidator,
 )
 from rest_framework.validators import UniqueTogetherValidator
-from .models import Note, NoteFile, University, Rating, Comment
+from .models import (
+    Note,
+    NoteFile,
+    University,
+    Rating,
+    Comment,
+    Group,
+    Membership,
+    Invitation,
+)
 from rest_framework import serializers
 
 
@@ -31,6 +40,7 @@ class NoteSerializer(serializers.ModelSerializer):
     author = serializers.HiddenField(default="author.id")
     author_username = serializers.ReadOnlyField(source="author.username")
     university_name = serializers.ReadOnlyField(source="university.name")
+    group = serializers.ReadOnlyField(source="group.id")
 
     class Meta:
         model = Note
@@ -42,6 +52,7 @@ class NoteSerializer(serializers.ModelSerializer):
             "university",
             "university_name",
             "course",
+            "group",
             "created_at",
             "updated_at",
         ]
@@ -105,4 +116,51 @@ class CommentSerializer(serializers.ModelSerializer):
             "author",
             "username",
             "text",
+        ]
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    moderator = serializers.HiddenField(default="moderator.id")
+    moderator_username = serializers.ReadOnlyField(source="moderator.username")
+
+    class Meta:
+        model = Group
+        fields = [
+            "id",
+            "name",
+            "moderator",
+            "moderator_username",
+        ]
+
+
+class MembershipSerializer(serializers.ModelSerializer):
+    group = serializers.ReadOnlyField(source="group.id")
+    group_name = serializers.ReadOnlyField(source="group.name")
+    user = serializers.ReadOnlyField(source="user.id")
+    username = serializers.ReadOnlyField(source="user.username")
+
+    class Meta:
+        model = Membership
+        fields = [
+            "id",
+            "group",
+            "group_name",
+            "user",
+            "username",
+        ]
+
+
+class InvitationSerializer(serializers.ModelSerializer):
+    group = serializers.ReadOnlyField(source="group.id")
+    group_name = serializers.ReadOnlyField(source="group.name")
+    username = serializers.ReadOnlyField(source="user.username")
+
+    class Meta:
+        model = Invitation
+        fields = [
+            "id",
+            "group",
+            "group_name",
+            "user",
+            "username",
         ]

@@ -14,11 +14,20 @@ class University(models.Model):
         return self.name
 
 
+class Group(models.Model):
+    name = models.CharField(max_length=200)
+    moderator = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+
 class Note(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=50)
     university = models.ForeignKey(University, models.SET_NULL, blank=True, null=True)
     course = models.CharField(max_length=50)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -60,3 +69,19 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.text
+
+
+class Invitation(models.Model):
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ["group", "user"]
+
+
+class Membership(models.Model):
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ["group", "user"]

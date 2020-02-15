@@ -2,8 +2,27 @@ from django.shortcuts import render
 from django.contrib.auth.models import User
 from rest_framework import generics, mixins, permissions, status
 from rest_framework.response import Response
-from .models import Note, NoteFile, University, Rating, Comment
-from .permissions import IsAuthorOrReadOnly, IsNoteAuthorOrReadOnly, AlreadyPosted
+from .models import (
+    Note,
+    NoteFile,
+    University,
+    Rating,
+    Comment,
+    Group,
+    Membership,
+    Invitation,
+)
+from .permissions import (
+    IsAuthorOrReadOnly,
+    IsAuthorOrModeratorOrReadOnly,
+    IsModeratorOrReadOnly,
+    IsNoteAuthorOrReadOnly,
+    AlreadyPosted,
+    CanAccessNote,
+    CanAccessGroup,
+    HasInvitation,
+    IsModerator,
+)
 from .serializers import (
     UserSerializer,
     NoteSerializer,
@@ -11,6 +30,9 @@ from .serializers import (
     UniversitySerializer,
     RatingSerializer,
     CommentSerializer,
+    MembershipSerializer,
+    GroupSerializer,
+    InvitationSerializer,
 )
 
 # Create your views here.
@@ -28,7 +50,6 @@ class UserView(mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericA
 
 class SelfView(generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)
-    queryset = User.objects.all()
     serializer_class = UserSerializer
 
     def get(self, request, *args, **kwargs):
@@ -37,24 +58,51 @@ class SelfView(generics.GenericAPIView):
         return Response(serializer.data)
 
 
-class SelfFileView(generics.GenericAPIView):
+class SelfNoteView(mixins.ListModelMixin, generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)
-    queryset = Note.objects.all()
+    serializer_class = NoteSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return Note.objects.filter(author__id=user.id)
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+
+class SelfGroupView(generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    queryset = Group.objects.all()
     serializer_class = NoteSerializer
 
     def get(self, request, *args, **kwargs):
-        notes = Note.objects.filter(author__id=request.user.id)
-        serializer = NoteSerializer(notes, many=True)
+        memberships = Membership.objects.filter(user__id=request.user.id)
+        id_list = []
+        for membership in memberships:
+            id_list.append(membership.group.id)
+        groups = Group.objects.filter(id__in=id_list)
+        serializer = GroupSerializer(groups, many=True)
         return Response(serializer.data)
+
+
+class SelfInvitationView(mixins.ListModelMixin, generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = InvitationSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return Invitation.objects.filter(user__id=user.id)
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
 
 
 class NoteView(mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-    queryset = Note.objects.all()
     serializer_class = NoteSerializer
 
     def get_queryset(self):
-        queryset = Note.objects.all()
+        queryset = Note.objects.all().filter(group__isnull=True)
         username = self.request.query_params.get("username", None)
         title = self.request.query_params.get("title", None)
         university = self.request.query_params.get("university", None)
@@ -73,7 +121,7 @@ class NoteView(mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericA
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        serializer.save(author=self.request.user, group=None)
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
@@ -83,7 +131,7 @@ class NoteView(mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericA
 
 
 class NoteDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = (IsAuthorOrReadOnly,)
+    permission_classes = (IsAuthorOrModeratorOrReadOnly, CanAccessNote)
     queryset = Note.objects.all()
     serializer_class = NoteSerializer
 
@@ -92,7 +140,7 @@ class NoteFileView(
     mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
 ):
     http_method_names = ["get", "post", "patch", "delete"]
-    permission_classes = (IsNoteAuthorOrReadOnly,)
+    permission_classes = (IsNoteAuthorOrReadOnly, CanAccessNote)
     serializer_class = NoteFileSerializer
 
     def perform_create(self, serializer):
@@ -120,7 +168,7 @@ class NoteFileView(
 
 class NoteFileDetailView(generics.RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "post", "patch", "delete", "options"]
-    permission_classes = (IsNoteAuthorOrReadOnly,)
+    permission_classes = (IsNoteAuthorOrReadOnly, CanAccessNote)
     serializer_class = NoteFileSerializer
     lookup_field = "index"
 
@@ -167,6 +215,7 @@ class RatingView(
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
         AlreadyPosted,
+        CanAccessNote,
     )
     serializer_class = RatingSerializer
 
@@ -192,7 +241,7 @@ class RatingView(
 
 class RatingDetailView(generics.RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "post", "patch", "delete", "options"]
-    permission_classes = (IsAuthorOrReadOnly,)
+    permission_classes = (IsAuthorOrReadOnly, CanAccessNote)
     serializer_class = RatingSerializer
 
     def get_queryset(self):
@@ -207,7 +256,7 @@ class RatingDetailView(generics.RetrieveUpdateDestroyAPIView):
 class CommentView(
     mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
 ):
-    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly, CanAccessNote)
     serializer_class = CommentSerializer
 
     def perform_create(self, serializer):
@@ -228,9 +277,159 @@ class CommentView(
 
 class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "post", "patch", "delete", "options"]
-    permission_classes = (IsAuthorOrReadOnly,)
+    permission_classes = (IsAuthorOrReadOnly, CanAccessNote)
     serializer_class = CommentSerializer
 
     def get_queryset(self):
         note_id = self.kwargs["note_id"]
         return Comment.objects.filter(note__pk=note_id)
+
+
+class GroupView(mixins.CreateModelMixin, generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = GroupSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(moderator=self.request.user)
+
+    def post(self, request, *args, **kwargs):
+        response = self.create(request, *args, **kwargs)
+        if status.is_success(response.status_code):
+            group = Group.objects.get(pk=response.data["id"])
+            user = request.user
+            Membership.objects.create(group=group, user=user)
+        return response
+
+
+class GroupDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = (
+        permissions.IsAuthenticated,
+        IsModeratorOrReadOnly,
+        CanAccessGroup,
+    )
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+
+
+class GroupNoteView(
+    mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
+):
+    permission_classes = (permissions.IsAuthenticated, CanAccessGroup)
+    serializer_class = NoteSerializer
+
+    def get_queryset(self):
+        queryset = Note.objects.all().filter(group=self.kwargs["group_id"])
+        username = self.request.query_params.get("username", None)
+        title = self.request.query_params.get("title", None)
+        university = self.request.query_params.get("university", None)
+        course = self.request.query_params.get("course", None)
+        order_by = self.request.query_params.get("order_by", None)
+        if username is not None:
+            queryset = queryset.filter(author__username=username)
+        if title is not None:
+            queryset = queryset.filter(title__contains=title)
+        if university is not None:
+            queryset = queryset.filter(university=university)
+        if course is not None:
+            queryset = queryset.filter(course=course)
+        if order_by is not None:
+            queryset = queryset.order_by(order_by)
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(
+            author=self.request.user,
+            group=Group.objects.get(pk=self.kwargs["group_id"]),
+        )
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
+class GroupMembershipView(
+    mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
+):
+    permission_classes = (
+        permissions.IsAuthenticated,
+        HasInvitation,
+    )
+    serializer_class = MembershipSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(
+            user=self.request.user, group=Group.objects.get(pk=self.kwargs["group_id"])
+        )
+
+    def get_queryset(self):
+        group_id = self.kwargs["group_id"]
+        return Membership.objects.filter(group=group_id)
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        response = self.create(request, *args, **kwargs)
+        if status.is_success(response.status_code):
+            group = Group.objects.get(pk=response.data["group"])
+            Invitation.objects.all().filter(user=request.user).filter(
+                group=group.id
+            ).delete()
+        return response
+
+
+class GroupMembershipDetailView(generics.RetrieveDestroyAPIView):
+    permission_classes = (
+        permissions.IsAuthenticated,
+        IsAuthorOrModeratorOrReadOnly,
+    )
+    serializer_class = MembershipSerializer
+
+    def get_queryset(self):
+        """
+            This view should return a list of all the purchases for
+            the user as determined by the username portion of the URL.
+            """
+        group_id = self.kwargs["group_id"]
+        return Membership.objects.filter(group__pk=group_id)
+
+
+class GroupInvitationView(
+    mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
+):
+    permission_classes = (
+        permissions.IsAuthenticated,
+        IsModerator,
+    )
+    serializer_class = InvitationSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(group=Group.objects.get(pk=self.kwargs["group_id"]))
+
+    def get_queryset(self):
+        group_id = self.kwargs["group_id"]
+        return Invitation.objects.filter(group=group_id)
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
+class GroupInvitationDetailView(generics.RetrieveDestroyAPIView):
+    permission_classes = (
+        permissions.IsAuthenticated,
+        IsModerator,
+    )
+    serializer_class = InvitationSerializer
+
+    def get_queryset(self):
+        """
+            This view should return a list of all the purchases for
+            the user as determined by the username portion of the URL.
+            """
+        group_id = self.kwargs["group_id"]
+        return Invitation.objects.filter(group__pk=group_id)
