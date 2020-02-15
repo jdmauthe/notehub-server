@@ -438,3 +438,48 @@ class GroupInvitationDetailView(generics.RetrieveDestroyAPIView):
             """
         group_id = self.kwargs["group_id"]
         return Invitation.objects.filter(group__pk=group_id)
+
+
+class FavoriteView(
+    mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
+):
+    permission_classes = (
+        permissions.IsAuthenticated,
+        IsAuthorOrReadOnly,
+        AlreadyPostedFavorite,
+        CanAccessFavorite,
+    )
+    serializer_class = FavoriteSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(
+            user=self.request.user, note=Note.objects.get(pk=self.kwargs["note_id"])
+        )
+
+    # def get(self, request, *args, **kwargs):
+    #     note_id = self.kwargs["note_id"]
+    #     favorite = Favorite.objects.filter(user=request.user.id).filter(note=note_id)
+    #     serializer = UserSerializer(favorite, many=True)
+    #     return Response(serializer.data)
+
+    def get_queryset(self):
+        note_id = self.kwargs["note_id"]
+        return Favorite.objects.filter(user=self.request.user.id).filter(note=note_id)
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
+class FavoriteDetailView(generics.RetrieveDestroyAPIView):
+    permission_classes = (
+        permissions.IsAuthenticated,
+        IsAuthor,
+    )
+    serializer_class = FavoriteSerializer
+
+    def get_queryset(self):
+        note_id = self.kwargs["note_id"]
+        return Favorite.objects.filter(user=self.request.user.id).filter(note=note_id)
