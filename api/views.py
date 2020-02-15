@@ -90,6 +90,22 @@ class SelfGroupView(generics.GenericAPIView):
         return Response(serializer.data)
 
 
+class SelfFavoritesView(mixins.ListModelMixin, generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = NoteSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        favorites = Favorite.objects.filter(user__id=user.id)
+        id_list = []
+        for favorite in favorites:
+            id_list.append(favorite.note.id)
+        return Note.objects.filter(id__in=id_list)
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+
 class SelfInvitationView(mixins.ListModelMixin, generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = InvitationSerializer
