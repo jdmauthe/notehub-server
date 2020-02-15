@@ -247,7 +247,7 @@ class RatingView(
 
     def get_queryset(self):
         note_id = self.kwargs["note_id"]
-        return Rating.objects.filter(note__pk=note_id)
+        return Rating.objects.filter(author=self.request.user.id).filter(note=note_id)
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
