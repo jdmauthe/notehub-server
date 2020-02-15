@@ -121,7 +121,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class GroupSerializer(serializers.ModelSerializer):
-    moderator = serializers.HiddenField(default="moderator.id")
+    moderator = serializers.ReadOnlyField(source="moderator.id")
     moderator_username = serializers.ReadOnlyField(source="moderator.username")
 
     class Meta:
