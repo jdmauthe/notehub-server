@@ -117,3 +117,18 @@ class CommentSerializer(serializers.ModelSerializer):
             "username",
             "text",
         ]
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    moderator = serializers.HiddenField(default="moderator.id")
+    moderator_username = serializers.ReadOnlyField(source="moderator.username")
+
+    class Meta:
+        model = Group
+        fields = [
+            "id",
+            "name",
+            "moderator",
+            "moderator_username",
+        ]
+
