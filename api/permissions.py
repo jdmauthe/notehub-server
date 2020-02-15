@@ -1,14 +1,28 @@
 from rest_framework import permissions
 from django.core.exceptions import ObjectDoesNotExist
-from .models import Note, Rating, Membership, Group, Invitation
+from .models import Note, Rating, Membership, Group, Invitation, Favorite
+
+
+class IsAuthor(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        user = None
+        try:
+            user = obj.user
+        except AttributeError:
+            user = obj.author
+        return user == request.user
 
 
 class IsAuthorOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
-
-        return obj.author == request.user
+        user = None
+        try:
+            user = obj.user
+        except AttributeError:
+            user = obj.author
+        return user == request.user
 
 
 class IsModeratorOrReadOnly(permissions.BasePermission):
