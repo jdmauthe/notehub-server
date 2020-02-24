@@ -16,6 +16,8 @@ from .models import (
     Membership,
     Invitation,
     Favorite,
+    NoteReport,
+    CommentReport,
 )
 from rest_framework import serializers
 
@@ -179,5 +181,31 @@ class FavoriteSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "note",
+            "user",
+        ]
+
+
+class NoteReportSerializer(serializers.ModelSerializer):
+    note = serializers.ReadOnlyField(source="note.id")
+    user = serializers.ReadOnlyField(source="user.id")
+
+    class Meta:
+        model = NoteReport
+        fields = [
+            "id",
+            "note",
+            "user",
+        ]
+
+
+class CommentReportSerializer(serializers.ModelSerializer):
+    comment = serializers.ReadOnlyField(source="comment.id")
+    user = serializers.ReadOnlyField(source="user.id")
+
+    class Meta:
+        model = CommentReport
+        fields = [
+            "id",
+            "comment",
             "user",
         ]
