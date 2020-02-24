@@ -12,6 +12,8 @@ from .models import (
     Membership,
     Invitation,
     Favorite,
+    NoteReport,
+    CommentReport,
 )
 from .permissions import (
     IsAuthor,
@@ -21,6 +23,8 @@ from .permissions import (
     IsNoteAuthorOrReadOnly,
     AlreadyPostedRating,
     AlreadyPostedFavorite,
+    AlreadyPostedNoteReport,
+    AlreadyPostedCommentReport,
     CanAccessNote,
     CanAccessGroup,
     CanAccessFavorite,
@@ -38,6 +42,8 @@ from .serializers import (
     GroupSerializer,
     InvitationSerializer,
     FavoriteSerializer,
+    NoteReportSerializer,
+    CommentReportSerializer,
 )
 
 # Create your views here.
@@ -168,10 +174,6 @@ class NoteFileView(
         serializer.save(note=Note.objects.get(pk=self.kwargs["note_id"]))
 
     def get_queryset(self):
-        """
-            This view should return a list of all the purchases for
-            the user as determined by the username portion of the URL.
-            """
         note_id = self.kwargs["note_id"]
         return NoteFile.objects.filter(note__pk=note_id)
 
@@ -194,10 +196,6 @@ class NoteFileDetailView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = "index"
 
     def get_queryset(self):
-        """
-            This view should return a list of all the purchases for
-            the user as determined by the username portion of the URL.
-            """
         note_id = self.kwargs["note_id"]
         return NoteFile.objects.filter(note__pk=note_id)
 
@@ -258,7 +256,11 @@ class RatingView(
 
 class RatingDetailView(generics.RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "post", "patch", "delete", "options"]
-    permission_classes = (permissions.IsAuthenticated, IsAuthorOrReadOnly, CanAccessNote)
+    permission_classes = (
+        permissions.IsAuthenticated,
+        IsAuthorOrReadOnly,
+        CanAccessNote,
+    )
     serializer_class = RatingSerializer
 
     def get_queryset(self):
@@ -401,10 +403,6 @@ class GroupMembershipDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = MembershipSerializer
 
     def get_queryset(self):
-        """
-            This view should return a list of all the purchases for
-            the user as determined by the username portion of the URL.
-            """
         group_id = self.kwargs["group_id"]
         return Membership.objects.filter(group__pk=group_id)
 
@@ -440,10 +438,6 @@ class GroupInvitationDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = InvitationSerializer
 
     def get_queryset(self):
-        """
-            This view should return a list of all the purchases for
-            the user as determined by the username portion of the URL.
-            """
         group_id = self.kwargs["group_id"]
         return Invitation.objects.filter(group__pk=group_id)
 
@@ -463,12 +457,6 @@ class FavoriteView(
         serializer.save(
             user=self.request.user, note=Note.objects.get(pk=self.kwargs["note_id"])
         )
-
-    # def get(self, request, *args, **kwargs):
-    #     note_id = self.kwargs["note_id"]
-    #     favorite = Favorite.objects.filter(user=request.user.id).filter(note=note_id)
-    #     serializer = UserSerializer(favorite, many=True)
-    #     return Response(serializer.data)
 
     def get_queryset(self):
         note_id = self.kwargs["note_id"]
@@ -491,3 +479,60 @@ class FavoriteDetailView(generics.RetrieveDestroyAPIView):
     def get_queryset(self):
         note_id = self.kwargs["note_id"]
         return Favorite.objects.filter(user=self.request.user.id).filter(note=note_id)
+
+
+class NoteReportView(
+    mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
+):
+    permission_classes = (
+        permissions.IsAuthenticated,
+        IsAuthorOrReadOnly,
+        AlreadyPostedNoteReport,
+        CanAccessFavorite,
+    )
+    serializer_class = NoteReportSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(
+            user=self.request.user, note=Note.objects.get(pk=self.kwargs["note_id"])
+        )
+
+    def get_queryset(self):
+        note_id = self.kwargs["note_id"]
+        return NoteReport.objects.filter(user=self.request.user.id).filter(note=note_id)
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
+class CommentReportView(
+    mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
+):
+    permission_classes = (
+        permissions.IsAuthenticated,
+        IsAuthorOrReadOnly,
+        AlreadyPostedCommentReport,
+        CanAccessFavorite,
+    )
+    serializer_class = CommentReportSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(
+            user=self.request.user,
+            comment=Comment.objects.get(pk=self.kwargs["comment_id"]),
+        )
+
+    def get_queryset(self):
+        comment_id = self.kwargs["comment_id"]
+        return CommentReport.objects.filter(user=self.request.user.id).filter(
+            comment=comment_id
+        )
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
