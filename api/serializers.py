@@ -110,7 +110,7 @@ class RatingSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    note = serializers.HiddenField(default="note.id")
+    note = serializers.ReadOnlyField(source="note.id")
     author = serializers.HiddenField(default="author.id")
     username = serializers.ReadOnlyField(source="author.username")
 
@@ -128,6 +128,11 @@ class CommentSerializer(serializers.ModelSerializer):
 class GroupSerializer(serializers.ModelSerializer):
     moderator = serializers.ReadOnlyField(source="moderator.id")
     moderator_username = serializers.ReadOnlyField(source="moderator.username")
+    is_moderator = serializers.SerializerMethodField(method_name="check_if_moderator")
+
+    def check_if_moderator(self, obj):
+        user = self.context['request'].user
+        return user == obj.moderator
 
     class Meta:
         model = Group
@@ -136,6 +141,7 @@ class GroupSerializer(serializers.ModelSerializer):
             "name",
             "moderator",
             "moderator_username",
+            "is_moderator",
         ]
 
 
