@@ -1,6 +1,15 @@
 from rest_framework import permissions
 from django.core.exceptions import ObjectDoesNotExist
-from .models import Note, Rating, Membership, Group, Invitation, Favorite
+from .models import (
+    Note,
+    Rating,
+    Membership,
+    Group,
+    Invitation,
+    Favorite,
+    NoteReport,
+    CommentReport,
+)
 
 
 class IsAuthor(permissions.BasePermission):
@@ -152,6 +161,32 @@ class AlreadyPostedFavorite(permissions.BasePermission):
             obj = Favorite.objects.all()
             return (
                 not obj.filter(note__pk=note_id)
+                .filter(user__pk=request.user.id)
+                .exists()
+            )
+        return True
+
+
+class AlreadyPostedNoteReport(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method == "POST":
+            note_id = view.kwargs["note_id"]
+            obj = NoteReport.objects.all()
+            return (
+                not obj.filter(note__pk=note_id)
+                .filter(user__pk=request.user.id)
+                .exists()
+            )
+        return True
+
+
+class AlreadyPostedCommentReport(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method == "POST":
+            comment_id = view.kwargs["comment_id"]
+            obj = CommentReport.objects.all()
+            return (
+                not obj.filter(comment__pk=comment_id)
                 .filter(user__pk=request.user.id)
                 .exists()
             )

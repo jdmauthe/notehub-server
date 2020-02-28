@@ -105,3 +105,25 @@ class Favorite(models.Model):
 
     def __str__(self):
         return self.user.username + " favorite for " + self.note.title
+
+
+class NoteReport(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    note = models.ForeignKey(Note, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ["user", "note"]
+
+    def __str__(self):
+        return self.user.username + " report for " + self.note.title
+
+
+class CommentReport(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ["user", "comment"]
+
+    def __str__(self):
+        return self.user.username + " report for " + self.comment.text
