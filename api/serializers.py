@@ -183,6 +183,10 @@ class InvitationSerializer(serializers.ModelSerializer):
     group = serializers.ReadOnlyField(source="group.id")
     group_name = serializers.ReadOnlyField(source="group.name")
     username = serializers.ReadOnlyField(source="user.username")
+    moderator_username = serializers.SerializerMethodField(method_name="get_moderator")
+
+    def get_moderator(self, obj):
+        return Group.objects.get(pk=obj.group.id).moderator.username
 
     class Meta:
         model = Invitation
@@ -192,6 +196,7 @@ class InvitationSerializer(serializers.ModelSerializer):
             "group_name",
             "user",
             "username",
+            "moderator_username",
         ]
 
 
