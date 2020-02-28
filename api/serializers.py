@@ -143,10 +143,18 @@ class GroupSerializer(serializers.ModelSerializer):
     moderator = serializers.ReadOnlyField(source="moderator.id")
     moderator_username = serializers.ReadOnlyField(source="moderator.username")
     is_moderator = serializers.SerializerMethodField(method_name="check_if_moderator")
+    membership_id = serializers.SerializerMethodField(method_name="get_membership_id")
 
     def check_if_moderator(self, obj):
         user = self.context['request'].user
         return user == obj.moderator
+
+    def get_membership_id(self, obj):
+        user = self.context['request'].user
+        membership = Membership.objects.filter(group=obj).filter(user=user)
+        if membership.exists():
+            return membership.get().id
+        return None
 
     class Meta:
         model = Group
@@ -155,6 +163,7 @@ class GroupSerializer(serializers.ModelSerializer):
             "name",
             "moderator",
             "moderator_username",
+            "membership_id",
             "is_moderator",
         ]
 
