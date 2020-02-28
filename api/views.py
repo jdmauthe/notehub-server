@@ -433,6 +433,11 @@ class GroupInvitationView(
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        print(args)
+        user = request.POST['user']
+        group = self.kwargs["group_id"]
+        if Membership.objects.all().filter(group=group).filter(user=user).exists():
+            return Response(data={"message": "User is already a member of the group."}, status=status.HTTP_400_BAD_REQUEST)
         return self.create(request, *args, **kwargs)
 
 
