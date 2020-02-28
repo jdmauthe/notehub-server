@@ -90,7 +90,7 @@ class SelfNoteView(mixins.ListModelMixin, generics.GenericAPIView):
 class SelfGroupView(generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = Group.objects.all()
-    serializer_class = NoteSerializer
+    serializer_class = GroupSerializer
 
     def get(self, request, *args, **kwargs):
         memberships = Membership.objects.filter(user__id=request.user.id)
@@ -98,7 +98,7 @@ class SelfGroupView(generics.GenericAPIView):
         for membership in memberships:
             id_list.append(membership.group.id)
         groups = Group.objects.filter(id__in=id_list)
-        serializer = GroupSerializer(groups, many=True)
+        serializer = GroupSerializer(groups, many=True, context={'request': request})
         return Response(serializer.data)
 
 

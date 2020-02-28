@@ -46,7 +46,7 @@ urlpatterns = [
     path("notes/<int:note_id>/ratings/<int:pk>/", RatingDetailView.as_view()),
     path("notes/<int:note_id>/comments/", CommentView.as_view()),
     path("notes/<int:note_id>/comments/<int:pk>/", CommentDetailView.as_view()),
-    path("notes/<int:note_id>/comments/<int:comment_id>/report", CommentReportView.as_view()),
+    path("notes/<int:note_id>/comments/<int:comment_id>/report/", CommentReportView.as_view()),
     path("notes/<int:note_id>/favorites/", FavoriteView.as_view()),
     path("notes/<int:note_id>/favorites/<int:pk>/", FavoriteDetailView.as_view()),
     path("notes/<int:note_id>/report/", NoteReportView.as_view()),
