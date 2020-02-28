@@ -46,6 +46,11 @@ class NoteSerializer(serializers.ModelSerializer):
     university_name = serializers.ReadOnlyField(source="university.name")
     group = serializers.ReadOnlyField(source="group.id")
     avg_rating = serializers.ReadOnlyField(source="get_avg_rating")
+    is_author = serializers.SerializerMethodField(method_name="check_is_author")
+
+    def check_is_author(self, obj):
+        user = self.context['request'].user
+        return user == obj.author
 
     class Meta:
         model = Note
@@ -59,6 +64,7 @@ class NoteSerializer(serializers.ModelSerializer):
             "course",
             "avg_rating",
             "group",
+            "is_author",
             "created_at",
             "updated_at",
         ]
