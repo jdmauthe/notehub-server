@@ -412,6 +412,14 @@ class GroupMembershipDetailView(generics.RetrieveDestroyAPIView):
         group_id = self.kwargs["group_id"]
         return Membership.objects.filter(group__pk=group_id)
 
+    def delete(self, request, *args, **kwargs):
+        group_id = self.kwargs["group_id"]
+        moderator = Group.objects.get(pk=group_id).moderator
+        if(request.user == moderator):
+            return Response(data={"message": "Not allowed to remove moderator membership."}, status=status.HTTP_403_FORBIDDEN)
+        return self.destroy(request, *args, **kwargs)
+
+
 
 class GroupInvitationView(
     mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView
