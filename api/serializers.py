@@ -150,6 +150,20 @@ class MembershipSerializer(serializers.ModelSerializer):
     group_name = serializers.ReadOnlyField(source="group.name")
     user = serializers.ReadOnlyField(source="user.id")
     username = serializers.ReadOnlyField(source="user.username")
+    role = serializers.SerializerMethodField(method_name="get_role")
+    is_user = serializers.SerializerMethodField(method_name="check_is_user")
+
+    def check_is_user(self, obj):
+        user = self.context['request'].user
+        return user == obj.user
+
+    def get_role(self, obj):
+        moderator = Group.objects.get(pk=obj.group.id).moderator
+        is_moderator = obj.user == moderator
+        if is_moderator:
+            return "Moderator"
+        else:
+            return "Member"
 
     class Meta:
         model = Membership
@@ -159,6 +173,9 @@ class MembershipSerializer(serializers.ModelSerializer):
             "group_name",
             "user",
             "username",
+            "role",
+            "is_user",
+            "joined_at",
         ]
 
 
