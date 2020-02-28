@@ -415,7 +415,9 @@ class GroupMembershipDetailView(generics.RetrieveDestroyAPIView):
     def delete(self, request, *args, **kwargs):
         group_id = self.kwargs["group_id"]
         moderator = Group.objects.get(pk=group_id).moderator
-        if(request.user == moderator):
+        membership_id = self.kwargs["pk"]
+        membership = Membership.objects.get(pk=membership_id)
+        if(membership.user == moderator):
             return Response(data={"message": "Not allowed to remove moderator membership."}, status=status.HTTP_403_FORBIDDEN)
         return self.destroy(request, *args, **kwargs)
 
