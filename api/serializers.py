@@ -1,4 +1,3 @@
-from django.contrib.auth.models import User
 from django.core.validators import (
     FileExtensionValidator,
     MinValueValidator,
@@ -20,6 +19,8 @@ from .models import (
     CommentReport,
 )
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):

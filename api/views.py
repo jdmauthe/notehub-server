@@ -1,5 +1,4 @@
 from django.shortcuts import render
-from django.contrib.auth.models import User
 from rest_framework import generics, mixins, permissions, status
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
@@ -47,6 +46,8 @@ from .serializers import (
     NoteReportSerializer,
     CommentReportSerializer,
 )
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 # Create your views here.
 class UserView(mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView):
