@@ -16,6 +16,7 @@ from .views import (
     SelfInvitationView,
     SelfFavoritesView,
     UpdatePasswordView,
+    UploadAvatarView,
     CommentView,
     CommentDetailView,
     GroupView,
@@ -29,6 +30,7 @@ from .views import (
     FavoriteDetailView,
     NoteReportView,
     CommentReportView,
+    AddSubscriptionView,
 )
 
 urlpatterns = [
@@ -39,6 +41,8 @@ urlpatterns = [
     path("user/invitations/", SelfInvitationView.as_view()),
     path("user/favorites/", SelfFavoritesView.as_view()),
     path("user/update_password/", UpdatePasswordView.as_view()),
+    path("user/upload_avatar/", UploadAvatarView.as_view()),
+    path("user/add_subscription/", AddSubscriptionView.as_view()),
     path("users/", UserView.as_view()),
     path("notes/", NoteView.as_view()),
     path("notes/<int:pk>/", NoteDetailView.as_view()),
