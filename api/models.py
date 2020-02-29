@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.utils import timezone
+
 User = get_user_model()
 
 
@@ -129,3 +131,13 @@ class CommentReport(models.Model):
 
     def __str__(self):
         return self.user.username + " report for " + self.comment.text
+
+
+class Subscription(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    starts_at = models.DateTimeField()
+    expires_at = models.DateTimeField()
+
+    def is_active(self):
+        current = timezone.now()
+        return self.starts_at < current and current < self.expires_at
