@@ -7,6 +7,7 @@ from .models import (
     Group,
     NoteReport,
     CommentReport,
+    Subscription,
 )
 # Register your models here.
 
@@ -17,3 +18,4 @@ admin.site.register(Comment)
 admin.site.register(Group)
 admin.site.register(NoteReport)
 admin.site.register(CommentReport)
+admin.site.register(Subscription)
