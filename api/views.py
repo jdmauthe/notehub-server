@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth.models import User
 from rest_framework import generics, mixins, permissions, status
 from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
 from .models import (
     Note,
     NoteFile,
@@ -33,6 +34,7 @@ from .permissions import (
 )
 from .serializers import (
     UserSerializer,
+    UpdatePasswordSerializer,
     NoteSerializer,
     NoteFileSerializer,
     UniversitySerializer,
@@ -63,6 +65,35 @@ class UserView(mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericA
 
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
+
+
+class UpdatePasswordView(generics.UpdateAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = UpdatePasswordSerializer
+    model = User
+
+    def get_object(self):
+        return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        self.obj = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid():
+            if not self.obj.check_password(serializer.data["old_password"]):
+                return Response(
+                    {"message": "Password is incorrect."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            self.obj.set_password(serializer.data["new_password"])
+            self.obj.save()
+            Token.objects.filter(user=self.obj).delete()
+            token = Token.objects.create(user=self.obj)
+            return Response(
+                {"message": "Password updated.", "token": token},
+                status=status.HTTP_200_OK,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class SelfView(generics.GenericAPIView):
@@ -98,7 +129,7 @@ class SelfGroupView(generics.GenericAPIView):
         for membership in memberships:
             id_list.append(membership.group.id)
         groups = Group.objects.filter(id__in=id_list)
-        serializer = GroupSerializer(groups, many=True, context={'request': request})
+        serializer = GroupSerializer(groups, many=True, context={"request": request})
         return Response(serializer.data)
 
 
@@ -417,10 +448,12 @@ class GroupMembershipDetailView(generics.RetrieveDestroyAPIView):
         moderator = Group.objects.get(pk=group_id).moderator
         membership_id = self.kwargs["pk"]
         membership = Membership.objects.get(pk=membership_id)
-        if(membership.user == moderator):
-            return Response(data={"message": "Not allowed to remove moderator membership."}, status=status.HTTP_403_FORBIDDEN)
+        if membership.user == moderator:
+            return Response(
+                data={"message": "Not allowed to remove moderator membership."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         return self.destroy(request, *args, **kwargs)
-
 
 
 class GroupInvitationView(
@@ -443,10 +476,13 @@ class GroupInvitationView(
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        user = request.data['user']
+        user = request.data["user"]
         group = self.kwargs["group_id"]
         if Membership.objects.all().filter(group=group).filter(user=user).exists():
-            return Response(data={"message": "User is already a member of the group."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                data={"message": "User is already a member of the group."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return self.create(request, *args, **kwargs)
 
 
