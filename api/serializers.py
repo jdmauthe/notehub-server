@@ -39,6 +39,10 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+class UpdatePasswordSerializer(serializers.Serializer):
+    model = User
+    old_password = serializers.CharField(max_length=50)
+    new_password = serializers.CharField(max_length=50)
 
 class NoteSerializer(serializers.ModelSerializer):
     author = serializers.HiddenField(default="author.id")
