@@ -2,6 +2,9 @@ from django.shortcuts import render
 from rest_framework import generics, mixins, permissions, status
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
+from rest_framework.parsers import FileUploadParser
+from django.utils import timezone
+
 from .models import (
     Note,
     NoteFile,
@@ -14,12 +17,14 @@ from .models import (
     Favorite,
     NoteReport,
     CommentReport,
+    Subscription,
 )
 from .permissions import (
     IsAuthor,
     IsAuthorOrReadOnly,
     IsAuthorOrModeratorOrReadOnly,
     IsModeratorOrReadOnly,
+    IsModeratorOrInvitee,
     IsNoteAuthorOrReadOnly,
     AlreadyPostedRating,
     AlreadyPostedFavorite,
@@ -34,6 +39,7 @@ from .permissions import (
 from .serializers import (
     UserSerializer,
     UpdatePasswordSerializer,
+    UploadAvatarSerializer,
     NoteSerializer,
     NoteFileSerializer,
     UniversitySerializer,
@@ -45,9 +51,20 @@ from .serializers import (
     FavoriteSerializer,
     NoteReportSerializer,
     CommentReportSerializer,
+    SubscriptionSerializer,
 )
 from django.contrib.auth import get_user_model
+
 User = get_user_model()
+
+
+def check_is_premium(user):
+    subscriptions = Subscription.objects.filter(user=user)
+    for subscription in subscriptions:
+        if subscription.is_active():
+            return True
+    return False
+
 
 # Create your views here.
 class UserView(mixins.CreateModelMixin, mixins.ListModelMixin, generics.GenericAPIView):
@@ -94,6 +111,25 @@ class UpdatePasswordView(generics.UpdateAPIView):
                 {"message": "Password updated.", "token": token},
                 status=status.HTTP_200_OK,
             )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UploadAvatarView(generics.UpdateAPIView):
+    parser_class = (FileUploadParser,)
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = UploadAvatarSerializer
+    model = User
+
+    def get_object(self):
+        return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        self.obj = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        if request.data["new_avatar"] == "" or serializer.is_valid():
+            self.obj.avatar = request.data["new_avatar"]
+            self.obj.save()
+            return Response({"message": "Uploaded Avatar."}, status=status.HTTP_200_OK,)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -219,6 +255,17 @@ class NoteFileView(
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        user = request.user
+        note_id = self.kwargs["note_id"]
+        size = request.data["file"].size
+        limit_size = 50000000
+        if not check_is_premium(user):
+            limit_size = 15000000
+        files = NoteFile.objects.filter(note=note_id)
+        for file in files:
+            size += file.file.size
+        if size > limit_size:
+            return Response({"message": "Exceeded note size limit."}, status=status.HTTP_403_FORBIDDEN)
         responce = self.create(request, *args, **kwargs)
         if status.is_success(responce.status_code):
             note_id = self.kwargs["note_id"]
@@ -346,6 +393,9 @@ class GroupView(mixins.CreateModelMixin, generics.GenericAPIView):
         serializer.save(moderator=self.request.user)
 
     def post(self, request, *args, **kwargs):
+        user = request.user
+        if not check_is_premium(user) and Membership.objects.filter(user=user).count() >= 3:
+            return Response({"message": "At the limit of three groups."}, status=status.HTTP_403_FORBIDDEN)
         response = self.create(request, *args, **kwargs)
         if status.is_success(response.status_code):
             group = Group.objects.get(pk=response.data["id"])
@@ -424,6 +474,9 @@ class GroupMembershipView(
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        user = request.user
+        if not check_is_premium(user) and Membership.objects.filter(user=user).count() >= 3:
+            return Response({"message": "At the limit of three groups."}, status=status.HTTP_403_FORBIDDEN)
         response = self.create(request, *args, **kwargs)
         if status.is_success(response.status_code):
             group = Group.objects.get(pk=response.data["group"])
@@ -490,7 +543,7 @@ class GroupInvitationView(
 class GroupInvitationDetailView(generics.RetrieveDestroyAPIView):
     permission_classes = (
         permissions.IsAuthenticated,
-        IsModerator,
+        IsModeratorOrInvitee,
     )
     serializer_class = InvitationSerializer
 
@@ -593,3 +646,17 @@ class CommentReportView(
 
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
+
+
+class AddSubscriptionView(generics.CreateAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = SubscriptionSerializer
+    model = User
+
+    def post(self, request, *args, **kwargs):
+        if check_is_premium(request.user):
+            return Response({"message": "Already have active subscription."}, status=status.HTTP_400_BAD_REQUEST)
+        subscription = Subscription(user=request.user, starts_at=timezone.now(), expires_at=timezone.now() + timezone.timedelta(days=30))
+        subscription.save()
+        serializer = self.get_serializer(subscription)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

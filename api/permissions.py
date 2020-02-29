@@ -127,6 +127,15 @@ class IsModerator(permissions.BasePermission):
         return request.user == group.moderator
 
 
+class IsModeratorOrInvitee(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        group_id = view.kwargs.get("group_id")
+        if group_id is None:
+            group_id = view.kwargs.get("pk")
+        group = Group.objects.get(pk=group_id)
+        return request.user == group.moderator or request.user == obj.user
+
+
 class IsNoteAuthorOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
