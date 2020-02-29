@@ -1,4 +1,3 @@
-from django.contrib.auth.models import User
 from django.core.validators import (
     FileExtensionValidator,
     MinValueValidator,
@@ -18,14 +17,36 @@ from .models import (
     Favorite,
     NoteReport,
     CommentReport,
+    Subscription,
 )
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
+    is_premium = serializers.SerializerMethodField(method_name="check_is_premium")
+
+    def check_is_premium(self, obj):
+        subscriptions = Subscription.objects.filter(user=obj)
+        for subscription in subscriptions:
+            if subscription.is_active():
+                return True
+        return False
+
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name", "username", "password"]
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "username",
+            "avatar",
+            "is_premium",
+            "password",
+        ]
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, data):
@@ -39,10 +60,17 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+
 class UpdatePasswordSerializer(serializers.Serializer):
     model = User
     old_password = serializers.CharField(max_length=50)
     new_password = serializers.CharField(max_length=50)
+
+
+class UploadAvatarSerializer(serializers.Serializer):
+    model = User
+    new_avatar = serializers.ImageField()
+
 
 class NoteSerializer(serializers.ModelSerializer):
     author = serializers.HiddenField(default="author.id")
@@ -54,11 +82,11 @@ class NoteSerializer(serializers.ModelSerializer):
     has_rated = serializers.SerializerMethodField(method_name="check_has_rated")
 
     def check_is_author(self, obj):
-        user = self.context['request'].user
+        user = self.context["request"].user
         return user == obj.author
 
     def check_has_rated(self, obj):
-        user = self.context['request'].user
+        user = self.context["request"].user
         if user.is_anonymous:
             return False
         return Rating.objects.filter(note=obj.id).filter(author=user).exists()
@@ -150,11 +178,11 @@ class GroupSerializer(serializers.ModelSerializer):
     membership_id = serializers.SerializerMethodField(method_name="get_membership_id")
 
     def check_if_moderator(self, obj):
-        user = self.context['request'].user
+        user = self.context["request"].user
         return user == obj.moderator
 
     def get_membership_id(self, obj):
-        user = self.context['request'].user
+        user = self.context["request"].user
         membership = Membership.objects.filter(group=obj).filter(user=user)
         if membership.exists():
             return membership.get().id
@@ -181,7 +209,7 @@ class MembershipSerializer(serializers.ModelSerializer):
     is_user = serializers.SerializerMethodField(method_name="check_is_user")
 
     def check_is_user(self, obj):
-        user = self.context['request'].user
+        user = self.context["request"].user
         return user == obj.user
 
     def get_role(self, obj):
@@ -263,4 +291,17 @@ class CommentReportSerializer(serializers.ModelSerializer):
             "id",
             "comment",
             "user",
+        ]
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source="user.id")
+
+    class Meta:
+        model = Subscription
+        fields = [
+            "id",
+            "user",
+            "starts_at",
+            "expires_at",
         ]
