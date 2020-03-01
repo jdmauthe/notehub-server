@@ -61,6 +61,16 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 
+class UpdateUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "email",
+            "first_name",
+            "last_name",
+        ]
+
+
 class UpdatePasswordSerializer(serializers.Serializer):
     model = User
     old_password = serializers.CharField(max_length=50)

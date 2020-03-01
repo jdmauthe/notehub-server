@@ -39,6 +39,7 @@ from .permissions import (
 from .serializers import (
     UserSerializer,
     UpdatePasswordSerializer,
+    UpdateUserSerializer,
     UploadAvatarSerializer,
     NoteSerializer,
     NoteFileSerializer,
@@ -133,14 +134,26 @@ class UploadAvatarView(generics.UpdateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class SelfView(generics.GenericAPIView):
+class SelfView(generics.RetrieveUpdateAPIView):
+    http_method_names = ["get", "patch"]
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = UserSerializer
+
+    def get_object(self):
+        return self.request.user
 
     def get(self, request, *args, **kwargs):
         user = User.objects.get(id=request.user.id)
         serializer = UserSerializer(user, many=False)
         return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        self.obj = self.get_object()
+        serializer = UpdateUserSerializer(self.obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class SelfNoteView(mixins.ListModelMixin, generics.GenericAPIView):
@@ -265,7 +278,10 @@ class NoteFileView(
         for file in files:
             size += file.file.size
         if size > limit_size:
-            return Response({"message": "Exceeded note size limit."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"message": "Exceeded note size limit."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         responce = self.create(request, *args, **kwargs)
         if status.is_success(responce.status_code):
             note_id = self.kwargs["note_id"]
@@ -394,8 +410,14 @@ class GroupView(mixins.CreateModelMixin, generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         user = request.user
-        if not check_is_premium(user) and Membership.objects.filter(user=user).count() >= 3:
-            return Response({"message": "At the limit of three groups."}, status=status.HTTP_403_FORBIDDEN)
+        if (
+            not check_is_premium(user)
+            and Membership.objects.filter(user=user).count() >= 3
+        ):
+            return Response(
+                {"message": "At the limit of three groups."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         response = self.create(request, *args, **kwargs)
         if status.is_success(response.status_code):
             group = Group.objects.get(pk=response.data["id"])
@@ -475,8 +497,14 @@ class GroupMembershipView(
 
     def post(self, request, *args, **kwargs):
         user = request.user
-        if not check_is_premium(user) and Membership.objects.filter(user=user).count() >= 3:
-            return Response({"message": "At the limit of three groups."}, status=status.HTTP_403_FORBIDDEN)
+        if (
+            not check_is_premium(user)
+            and Membership.objects.filter(user=user).count() >= 3
+        ):
+            return Response(
+                {"message": "At the limit of three groups."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         response = self.create(request, *args, **kwargs)
         if status.is_success(response.status_code):
             group = Group.objects.get(pk=response.data["group"])
@@ -655,8 +683,15 @@ class AddSubscriptionView(generics.CreateAPIView):
 
     def post(self, request, *args, **kwargs):
         if check_is_premium(request.user):
-            return Response({"message": "Already have active subscription."}, status=status.HTTP_400_BAD_REQUEST)
-        subscription = Subscription(user=request.user, starts_at=timezone.now(), expires_at=timezone.now() + timezone.timedelta(days=30))
+            return Response(
+                {"message": "Already have active subscription."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        subscription = Subscription(
+            user=request.user,
+            starts_at=timezone.now(),
+            expires_at=timezone.now() + timezone.timedelta(days=30),
+        )
         subscription.save()
         serializer = self.get_serializer(subscription)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
