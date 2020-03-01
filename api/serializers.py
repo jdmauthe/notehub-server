@@ -77,6 +77,7 @@ class NoteSerializer(serializers.ModelSerializer):
     author_username = serializers.ReadOnlyField(source="author.username")
     university_name = serializers.ReadOnlyField(source="university.name")
     group = serializers.ReadOnlyField(source="group.id")
+    group_name = serializers.ReadOnlyField(source="group.name")
     avg_rating = serializers.ReadOnlyField(source="get_avg_rating")
     is_author = serializers.SerializerMethodField(method_name="check_is_author")
     has_rated = serializers.SerializerMethodField(method_name="check_has_rated")
@@ -104,6 +105,7 @@ class NoteSerializer(serializers.ModelSerializer):
             "avg_rating",
             "has_rated",
             "group",
+            "group_name",
             "is_author",
             "created_at",
             "updated_at",
