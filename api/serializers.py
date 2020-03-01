@@ -159,6 +159,11 @@ class CommentSerializer(serializers.ModelSerializer):
     note = serializers.ReadOnlyField(source="note.id")
     author = serializers.HiddenField(default="author.id")
     username = serializers.ReadOnlyField(source="author.username")
+    is_author = serializers.SerializerMethodField(method_name="check_if_author")
+
+    def check_if_author(self, obj):
+        user = self.context["request"].user
+        return user == obj.author
 
     class Meta:
         model = Comment
@@ -168,6 +173,7 @@ class CommentSerializer(serializers.ModelSerializer):
             "author",
             "username",
             "text",
+            "is_author",
         ]
 
 
