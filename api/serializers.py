@@ -185,6 +185,7 @@ class CommentSerializer(serializers.ModelSerializer):
             "author",
             "username",
             "text",
+            "created_at",
             "is_author",
         ]
 
