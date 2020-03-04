@@ -27,6 +27,9 @@ User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     is_premium = serializers.SerializerMethodField(method_name="check_is_premium")
+    total_uploads = serializers.SerializerMethodField(method_name="get_total_uploads")
+    avg_rating = serializers.SerializerMethodField(method_name="get_avg_rating")
+    total_favorite = serializers.SerializerMethodField(method_name="get_total_favorite")
 
     def check_is_premium(self, obj):
         subscriptions = Subscription.objects.filter(user=obj)
@@ -34,6 +37,23 @@ class UserSerializer(serializers.ModelSerializer):
             if subscription.is_active():
                 return True
         return False
+
+    def get_total_uploads(self, obj):
+        notes = Note.objects.filter(author=obj)
+        return notes.count()
+
+    def get_avg_rating(self, obj):
+        ratings = Rating.objects.filter(note__author=obj)
+        if ratings.count() == 0:
+            return None
+        total = 0
+        for rating in ratings:
+            total += rating.score
+        return total/ratings.count()
+
+    def get_total_favorite(self, obj):
+        favorites = Favorite.objects.filter(user=obj)
+        return favorites.count()
 
     class Meta:
         model = User
@@ -45,6 +65,9 @@ class UserSerializer(serializers.ModelSerializer):
             "username",
             "avatar",
             "is_premium",
+            "total_uploads",
+            "avg_rating",
+            "total_favorite",
             "password",
         ]
         extra_kwargs = {"password": {"write_only": True}}
