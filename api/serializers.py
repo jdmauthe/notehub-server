@@ -78,7 +78,7 @@ class UserSerializer(serializers.ModelSerializer):
             first_name=data["first_name"],
             last_name=data["last_name"],
             username=data["username"],
-            avatar=data["avatar"],
+            avatar=data.get("avatar"),
         )
         user.set_password(data["password"])
         user.save()
