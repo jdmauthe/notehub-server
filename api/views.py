@@ -109,7 +109,7 @@ class UpdatePasswordView(generics.UpdateAPIView):
             Token.objects.filter(user=self.obj).delete()
             token = Token.objects.create(user=self.obj)
             return Response(
-                {"message": "Password updated.", "token": token},
+                {"message": "Password updated.", "token": token.key},
                 status=status.HTTP_200_OK,
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
