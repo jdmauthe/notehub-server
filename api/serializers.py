@@ -114,11 +114,18 @@ class NoteSerializer(serializers.ModelSerializer):
     group_name = serializers.ReadOnlyField(source="group.name")
     avg_rating = serializers.ReadOnlyField(source="get_avg_rating")
     is_author = serializers.SerializerMethodField(method_name="check_is_author")
+    is_moderator = serializers.SerializerMethodField(method_name="check_is_moderator")
     has_rated = serializers.SerializerMethodField(method_name="check_has_rated")
 
     def check_is_author(self, obj):
         user = self.context["request"].user
         return user == obj.author
+
+    def check_is_moderator(self, obj):
+        if obj.group is None:
+            return False;
+        group = Group.objects.get(pk=obj.group.pk)
+        return group.moderator == obj.author
 
     def check_has_rated(self, obj):
         user = self.context["request"].user
@@ -141,6 +148,7 @@ class NoteSerializer(serializers.ModelSerializer):
             "group",
             "group_name",
             "is_author",
+            "is_moderator",
             "created_at",
             "updated_at",
         ]
