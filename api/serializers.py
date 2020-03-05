@@ -122,10 +122,11 @@ class NoteSerializer(serializers.ModelSerializer):
         return user == obj.author
 
     def check_is_moderator(self, obj):
+        user = self.context["request"].user
         if obj.group is None:
             return False;
         group = Group.objects.get(pk=obj.group.pk)
-        return group.moderator == obj.author
+        return user == group.moderator
 
     def check_has_rated(self, obj):
         user = self.context["request"].user
