@@ -382,7 +382,7 @@ class CommentView(
 
     def get_queryset(self):
         note_id = self.kwargs["note_id"]
-        return Comment.objects.filter(note__pk=note_id)
+        return Comment.objects.filter(note__pk=note_id).order_by("created_at")
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
